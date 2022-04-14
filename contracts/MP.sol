@@ -106,7 +106,7 @@ contract MarketPlace {
         address buyer
     );
 
-    mapping(uint256 => Item) private idToItem;
+    mapping(uint256 => Item) public idToItem;
     
     function createItem(address nftContract, uint256 tokenId, uint256 price) public {
         require(price > 0, "Price should be >0");
@@ -131,9 +131,7 @@ contract MarketPlace {
 
     function mint(uint256 price) public{
         uint256 balance = ERC20(_erc20Tkns).balanceOf(msg.sender);
-        uint256 allowence = ERC20(_erc20Tkns).allowance(msg.sender, address(this));
         require(balance>price, "Not enough tokens to buy");
-        require(allowence>price, "Not enough allowence");
 
         _itemsIds.increment();
         uint256 itemId = _itemsIds.current();
@@ -175,12 +173,6 @@ contract MarketPlace {
     }
 
     function buyItem(uint itemId, address nftContract) public payable{
-        uint256 balance = ERC20(_erc20Tkns).balanceOf(msg.sender);
-        uint256 allowence = ERC20(_erc20Tkns).allowance(msg.sender, idToItem[itemId].owner);
-
-        require(balance>msg.value, "Not enough tokens to buy");
-        require(allowence>idToItem[itemId].price, "Not enough allowence");
-
         ERC20(_erc20Tkns).transferFrom(msg.sender, address(this), msg.value);
         //IERC721(nftContract).transferFrom(address(this), msg.sender, idToItem[itemId].tokenId);
         idToItem[itemId].owner = msg.sender;
@@ -188,9 +180,9 @@ contract MarketPlace {
         emit LListingCommited(itemId, nftContract, idToItem[itemId].tokenId, msg.sender, msg.value, Status.exist);
     }
 
-    function stockCheck() public returns(uint, uint256){
+    //function stockCheck() public returns(uint, uint256){
 
-    }
+    //}
 
     function startAuction(uint itemId) public payable {
         require(msg.sender == idToItem[itemId].owner, "Not an owner");
@@ -204,8 +196,6 @@ contract MarketPlace {
     }
 
     function makeBid(uint itemId) public payable {
-        uint256 balance = ERC20(_erc20Tkns).balanceOf(msg.sender);
-        require(balance>msg.value, "Not enough tokens to make a bid"); 
         require(msg.value>idToItem[itemId].price, "Bid is lower than price");
         require(block.timestamp < idToItem[itemId].auctionEndTime, "Auction is finished");
 
@@ -216,10 +206,13 @@ contract MarketPlace {
     }
 
     function cancelAuction(uint itemId) public{
+        require(idToItem[itemId].status == Status.selling_via_auction, "Not listed on auction");
+
         require(block.timestamp < idToItem[itemId].auctionEndTime, "Auction is finished");
-        require(idToItem[itemId].status == Status.selling_via_auction, "Not listed in auction");
+        require(idToItem[itemId].owner == msg.sender, "Not an owner");
 
         idToItem[itemId].status = Status.exist;
+        idToItem[itemId].lastBidder = address(0);
 
         emit AuctionCancelled(itemId, Status.exist);
 
@@ -232,11 +225,14 @@ contract MarketPlace {
             emit AuctionFinished(itemId, idToItem[itemId].owner, idToItem[itemId].price, Status.exist);
 
         } else{
-            uint256 balance = ERC20(_erc20Tkns).balanceOf(idToItem[itemId].lastBidder);
-            uint256 allowence = ERC20(_erc20Tkns).allowance(idToItem[itemId].lastBidder, idToItem[itemId].owner);
+            console.log(idToItem[itemId].price);
+            console.log(idToItem[itemId].owner);
+
+            console.log(idToItem[itemId].lastBidder);
+
             
-            require(balance>idToItem[itemId].price, "Not enough tokens to buy");
-            require(allowence>idToItem[itemId].price, "Not enough allowence");
+            console.log(IERC20(_erc20Tkns).allowance(idToItem[itemId].lastBidder, idToItem[itemId].owner));
+
             IERC20(_erc20Tkns).transferFrom(idToItem[itemId].lastBidder, idToItem[itemId].owner, idToItem[itemId].price);
             idToItem[itemId].owner = idToItem[itemId].lastBidder;
             emit AuctionFinished(itemId, idToItem[itemId].owner, idToItem[itemId].price, Status.exist);
@@ -247,9 +243,7 @@ contract MarketPlace {
         idToItem[itemId].auctionEndTime = 0;
     }
 
-    function setMyNFT(address addrNFT) public{
-        _myNFTs = addrNFT;
-    }
+    
 
     /*function withdrawNFT(uint itemId) public{
         require(msg.sender == idToItem[itemId].owner, "Not an owner");
@@ -274,8 +268,16 @@ contract MarketPlace {
         return Status.exist;
     }
 
-    function getStatusUknown() public pure returns(Status){
+    /*function getStatusUknown() public pure returns(Status){
         return Status.unknown;
+    }*/
+
+    function getOwner(uint itemId) public view returns(address){
+        return idToItem[itemId].owner;
+    }
+
+    function getStatus(uint itemId) public view returns(Status){
+        return idToItem[itemId].status;
     }
    
 }

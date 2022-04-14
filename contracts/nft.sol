@@ -22,12 +22,12 @@ contract GameItem is ERC721 {
         return newItemId;
     }
 
-    function _baseURI() internal view virtual override returns (string memory) {
+    /*function _baseURI() internal view virtual override returns (string memory) {
         return baseTokenURI;
     }
 
     function setBaseTokenURI(string memory _baseTokenURI) public {
         baseTokenURI = _baseTokenURI;
     }
-    
+    */
 }
