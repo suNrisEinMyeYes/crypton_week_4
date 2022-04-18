@@ -118,6 +118,8 @@ describe("Token contract", function () {
         await marketPlace.connect(addr1).listingItem(1,parseEther("50"))
 
         await erc20Token.connect(erc20User).earn(await addr2.getAddress(), parseEther("50"))
+        await erc20Token.connect(erc20User).earn(await erc20User.getAddress(), parseEther("50"))
+
         await erc20Token.connect(addr2).approve(marketPlace.address, parseEther("50"))
         await marketPlace.connect(addr2).buyItem(1, nftToken.address, {value: parseEther("50")})
 
@@ -135,7 +137,7 @@ describe("Token contract", function () {
 
 
         await marketPlace.connect(addr2).startAuction(1, {value : parseEther("10")})
-        await marketPlace.connect(addr1).makeBid(1, {value:parseEther("12")})
+        await marketPlace.connect(erc20User).makeBid(1, {value:parseEther("12")})
         await expect(marketPlace.connect(addr1).finishAuction(1)).to.be.revertedWith("Auction is not finished")
         await ethers.provider.send('evm_increaseTime', [7 * 24 * 60 * 60]);
         await expect(marketPlace.connect(addr2).makeBid(1,{value : parseEther("25")})).to.be.revertedWith("Auction is finished")
@@ -143,21 +145,20 @@ describe("Token contract", function () {
         await expect(marketPlace.connect(addr1).cancelAuction(1)).to.be.revertedWith("Auction is finished")
 
 
-        await erc20Token.connect(erc20User).earn(await addr1.getAddress(), parseEther("100"))
-        await erc20Token.connect(erc20User).earn(await addr2.getAddress(), parseEther("100"))
+        //await erc20Token.connect(erc20User).earn(await addr1.getAddress(), parseEther("100"))
+        //await erc20Token.connect(erc20User).earn(await addr2.getAddress(), parseEther("100"))
 
-        await erc20Token.connect(addr1).approve(await addr2.getAddress(), parseEther("15"))
-        console.log(await erc20Token.allowance(await addr1.getAddress(), await addr2.getAddress()))
+        await erc20Token.connect(erc20User).approve(await addr2.getAddress(), parseEther("15"))
+        console.log(await erc20Token.allowance(await erc20User.getAddress(), await addr2.getAddress()))
         //await erc20Token.transferFrom(await addr1.getAddress(), await addr2.getAddress(), parseEther("12"))
 
 
         //console.log(await erc20Token.connect(addr1).allowance(await addr1.getAddress(), await addr2.getAddress()))
-        console.log(await addr1.getAddress())
         //console.log(await addr2.getAddress())
         //console.log(await marketPlace.connect(addr1).getOwner(1));
 
         console.log(await marketPlace.connect(addr1).getOwner(1));
-        //await marketPlace.connect(addr1).finishAuction(1)
+        await marketPlace.connect(addr1).finishAuction(1)
         //expect(marketPlace.connect(addr1).getOwner(1)).to.equal(await addr1.getAddress())
 
 
@@ -182,9 +183,11 @@ describe("Token contract", function () {
       it("initiate cancel finish bid", async function () {
         
         
-
-        //await marketPlace.connect(owner).awardItem(addr1.getAddress())
-        //expect(await marketPlace.ownerOf(1)).to.equal((await addr1.getAddress()).toString());
+        await erc20Token.connect(erc20User).earn( addr1.getAddress(), parseEther("15"))
+        await erc20Token.connect(addr1).approve(erc20User.getAddress(), parseEther("5"))
+        console.log(await erc20Token.allowance(addr1.getAddress(), addr2.getAddress()))
+        console.log(await erc20Token.balanceOf(addr1.getAddress()))
+        await erc20Token.connect(erc20User).transferFrom(addr1.getAddress(), erc20User.getAddress(), parseEther("3"))
 
 
       });
